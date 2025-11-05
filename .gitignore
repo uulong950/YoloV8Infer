@@ -1,0 +1,27 @@
+# Build directories
+out/
+build/
+cmake-build-*/
+
+# IDE files
+.vs/
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+
+# Log files
+logs/
+
+# OS generated files
+Thumbs.db
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp

@@ -1,0 +1,14 @@
+{
+  "model": {
+    "path": "D:/workspace/codetest/OpenCVCppTest/OpenCVFirst/bestV640.onnx",
+    "input_width": 640,
+    "input_height": 640
+  },
+    "detection": {
+        "confidence_threshold": 0.35,
+        "nms_threshold": 0.45
+    },
+  "input": {
+    "image_path": "D:/workspace/codetest/OpenCVCppTest/OpenCVFirst/yeer_500w_1944x2592x3_001_None_1.jpg"
+  }
+}
