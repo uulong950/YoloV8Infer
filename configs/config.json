@@ -6,9 +6,12 @@
   },
     "detection": {
         "confidence_threshold": 0.35,
-        "nms_threshold": 0.45
+        "nms_threshold": 0.55
     },
   "input": {
-    "image_path": "D:/workspace/codetest/OpenCVCppTest/OpenCVFirst/yeer_500w_1944x2592x3_001_None_1.jpg"
-  }
+    "image_path": "D:/workspace/codetest/OpenCVCppTest/OpenCVFirst/test.jpg"
+  },
+  "classes": [
+    "face"
+  ]
 }

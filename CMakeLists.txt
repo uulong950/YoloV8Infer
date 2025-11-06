@@ -60,7 +60,6 @@ endif()
 # ===================
 # nlohmann/json
 # ===================
-# 使用本地解压的nlohmann/json
 set(NLOHMANN_JSON_INCLUDE_DIRS "D:/install/nljson/json-3.12.0/include")
 
 if(NOT EXISTS "${NLOHMANN_JSON_INCLUDE_DIRS}/nlohmann/json.hpp")

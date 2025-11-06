@@ -38,6 +38,9 @@ public:
     void setNMSThreshold(float threshold);
     void drawBoxes(cv::Mat& image, const std::vector<DetectionResult>& detections);
     
+    // 获取类别名称
+    const std::vector<std::string>& getClassNames() const { return class_names_; }
+    
 private:
     std::unique_ptr<Ort::Env> env_;
     std::unique_ptr<Ort::Session> session_;
@@ -49,8 +52,7 @@ private:
     int input_width_;
     int input_height_;
     
-    // spdlog logger
-    std::shared_ptr<spdlog::logger> console_logger_;
+
     
     std::vector<int> nmsBoxes(const std::vector<cv::Rect>& boxes, 
                              const std::vector<float>& confidences);

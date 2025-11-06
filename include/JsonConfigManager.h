@@ -19,6 +19,10 @@ struct InputConfig {
     std::string image_path;
 };
 
+struct ClassesConfig {
+    std::vector<std::string> names;
+};
+
 class JsonConfigManager {
 public:
     explicit JsonConfigManager(const std::string& config_path);
@@ -28,6 +32,7 @@ public:
     const ModelConfig& getModelConfig() const { return model_config_; }
     const DetectionConfig& getDetectionConfig() const { return detection_config_; }
     const InputConfig& getInputConfig() const { return input_config_; }
+    const ClassesConfig& getClassesConfig() const { return classes_config_; }
 
 private:
     std::string config_path_;
@@ -36,8 +41,10 @@ private:
     ModelConfig model_config_;
     DetectionConfig detection_config_;
     InputConfig input_config_;
+    ClassesConfig classes_config_;
     
     bool parseModelConfig();
     bool parseDetectionConfig();
     bool parseInputConfig();
+    bool parseClassesConfig();
 };

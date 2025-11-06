@@ -3,24 +3,12 @@
 #include <algorithm>
 
 ObjectDetector::ObjectDetector() 
-    : confidence_threshold_(0.35f)
-    , nms_threshold_(0.45f)
-    , input_width_(640)
-    , input_height_(640) {
-    class_names_ = {"face"};
-    
-    // 初始化spdlog
-    try {
-        // 创建控制台logger
-        console_logger_ = spdlog::get("console");
-        if (!console_logger_) {
-            console_logger_ = spdlog::stdout_color_mt("detector");
-            console_logger_->set_level(spdlog::level::info);
-        }
-        console_logger_->info("ObjectDetector initialized");
-    } catch (const spdlog::spdlog_ex& ex) {
-        std::cerr << "Log initialization failed: " << ex.what() << std::endl;
-    }
+    : confidence_threshold_(0.0f)
+    , nms_threshold_(0.0f)
+    , input_width_(0)
+    , input_height_(0) {
+    // 类别名称将从JSON配置中加载
+    spdlog::info("ObjectDetector initialized");
 }
 
 ObjectDetector::~ObjectDetector() = default;
@@ -30,6 +18,7 @@ bool ObjectDetector::initialize(JsonConfigManager& config_manager) {
         // 从JSON配置获取参数
         const auto& model_config = config_manager.getModelConfig();
         const auto& detection_config = config_manager.getDetectionConfig();
+        const auto& classes_config = config_manager.getClassesConfig();
         
         // 设置模型参数
         input_width_ = model_config.input_width;
@@ -37,30 +26,33 @@ bool ObjectDetector::initialize(JsonConfigManager& config_manager) {
         confidence_threshold_ = detection_config.confidence_threshold;
         nms_threshold_ = detection_config.nms_threshold;
         
-        if (console_logger_) {
-            console_logger_->info("Initializing ObjectDetector from JSON config");
-            console_logger_->info("Model path: {}", model_config.path);
-            console_logger_->info("Input size: {}x{}", input_width_, input_height_);
-            console_logger_->info("Confidence threshold: {}", confidence_threshold_);
-            console_logger_->info("NMS threshold: {}", nms_threshold_);
+        // 设置类别名称
+        if (!classes_config.names.empty()) {
+            class_names_ = classes_config.names;
+        } else {
+            // 默认类别名称
+            class_names_ = {"face"};
         }
+        
+        spdlog::info("Initializing ObjectDetector from JSON config");
+        spdlog::info("Model path: {}", model_config.path);
+        spdlog::info("Input size: {}x{}", input_width_, input_height_);
+        spdlog::info("Confidence threshold: {}", confidence_threshold_);
+        spdlog::info("NMS threshold: {}", nms_threshold_);
+        spdlog::info("Number of classes: {}", class_names_.size());
         
         // 调用基础初始化方法
         return initialize(model_config.path);
     }
     catch (const std::exception& e) {
-        if (console_logger_) {
-            console_logger_->error("Failed to initialize from JSON config: {}", e.what());
-        }
+        spdlog::error("Failed to initialize from JSON config: {}", e.what());
         return false;
     }
 }
 
 bool ObjectDetector::initialize(const std::string& model_path) {
     try {
-        if (console_logger_) {
-            console_logger_->info("Initializing ObjectDetector with model: {}", model_path);
-        }
+        spdlog::info("Initializing ObjectDetector with model: {}", model_path);
         
         // Create ONNX Runtime environment
         env_ = std::make_unique<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "ObjectDetector");
@@ -94,23 +86,17 @@ bool ObjectDetector::initialize(const std::string& model_path) {
             output_node_names_[i] = output_name.get();
         }
         
-        if (console_logger_) {
-            console_logger_->info("Model loaded successfully. Input nodes: {}, Output nodes: {}", 
-                                num_input_nodes, num_output_nodes);
-        }
+        spdlog::info("Model loaded successfully. Input nodes: {}, Output nodes: {}", 
+                            num_input_nodes, num_output_nodes);
         
         return true;
     }
     catch (const Ort::Exception& e) {
-        if (console_logger_) {
-            console_logger_->error("ONNX Runtime Exception: {}", e.what());
-        }
+        spdlog::error("ONNX Runtime Exception: {}", e.what());
         return false;
     }
     catch (const std::exception& e) {
-        if (console_logger_) {
-            console_logger_->error("Standard Exception: {}", e.what());
-        }
+        spdlog::error("Standard Exception: {}", e.what());
         return false;
     }
 }
@@ -121,9 +107,7 @@ std::vector<DetectionResult> ObjectDetector::detect(const cv::Mat& image) {
     auto start_time = std::chrono::high_resolution_clock::now();
     
     try {
-        if (console_logger_) {
-            console_logger_->info("Starting detection on image ({}x{})", image.cols, image.rows);
-        }
+        spdlog::info("Starting detection on image ({}x{})", image.cols, image.rows);
         
         // Preprocessing
         cv::Mat blob;
@@ -162,19 +146,19 @@ std::vector<DetectionResult> ObjectDetector::detect(const cv::Mat& image) {
         std::vector<int64_t> output_dims = output_info.GetShape();
         
         if (output_dims.size() != 3 || output_dims[0] != 1 || output_dims[1] != 5) {
-            if (console_logger_) {
-                console_logger_->error("Output tensor format error! Expected [1, 5, N], got [{}, {}, {}]", 
-                                    output_dims.size(), output_dims[0], output_dims[1]);
-            }
+            spdlog::error("Output tensor format error! Expected [1, 5, N], got [{}, {}, {}]", 
+                                output_dims.size(), output_dims[0], output_dims[1]);
             return results;
         }
         
         int num_anchors = static_cast<int>(output_dims[2]);
-        int num_classes = 1;
-        
-        if (console_logger_) {
-            console_logger_->debug("Processing {} anchors", num_anchors);
+        // 使用配置文件中的类别数量，如果未设置则默认为1
+        int num_classes = static_cast<int>(class_names_.size());
+        if (num_classes == 0) {
+            num_classes = 1;  // 默认类别数
         }
+        
+        spdlog::debug("Processing {} anchors with {} classes", num_anchors, num_classes);
         
         std::vector<cv::Rect> boxes;
         std::vector<float> confidences;
@@ -223,9 +207,7 @@ std::vector<DetectionResult> ObjectDetector::detect(const cv::Mat& image) {
             }
         }
         
-        if (console_logger_) {
-            console_logger_->debug("Found {} valid detections before NMS", valid_detections);
-        }
+        spdlog::debug("Found {} valid detections before NMS", valid_detections);
         
         // Apply NMS
         std::vector<int> indices = nmsBoxes(boxes, confidences);
@@ -242,25 +224,17 @@ std::vector<DetectionResult> ObjectDetector::detect(const cv::Mat& image) {
         auto end_time = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
         
-        if (console_logger_) {
-            console_logger_->info("Detection completed in {} ms. Found {} objects", duration.count(), results.size());
-        }
+        spdlog::info("Detection completed in {} ms. Found {} objects", duration.count(), results.size());
         
     }
     catch (const Ort::Exception& e) {
-        if (console_logger_) {
-            console_logger_->error("ONNX Runtime Exception during inference: {}", e.what());
-        }
+        spdlog::error("ONNX Runtime Exception during inference: {}", e.what());
     }
     catch (const cv::Exception& e) {
-        if (console_logger_) {
-            console_logger_->error("OpenCV Exception during inference: {}", e.what());
-        }
+        spdlog::error("OpenCV Exception during inference: {}", e.what());
     }
     catch (const std::exception& e) {
-        if (console_logger_) {
-            console_logger_->error("Standard Exception during inference: {}", e.what());
-        }
+        spdlog::error("Standard Exception during inference: {}", e.what());
     }
     
     return results;

@@ -10,15 +10,11 @@
 
 int main(int argc, char* argv[]) {
     // Initialize spdlog
-    std::shared_ptr<spdlog::logger> console;
-    std::shared_ptr<spdlog::logger> file_logger;
     try {
-        console = spdlog::stdout_color_mt("console");
-        file_logger = spdlog::basic_logger_mt("file_logger", "logs/yolov8_infer.log");
-        
         // Create a logger that outputs to both console and file
         std::vector<spdlog::sink_ptr> sinks;
         auto console_sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+        // 使用项目根目录下的logs文件夹
         auto file_sink = std::make_shared<spdlog::sinks::basic_file_sink_mt>("logs/yolov8_infer.log", true);
         
         sinks.push_back(console_sink);
@@ -34,12 +30,12 @@ int main(int argc, char* argv[]) {
         return -1;
     }
     
-    console->info("Starting YoloV8Infer application");
+    spdlog::info("Starting YoloV8Infer application");
     
     // Load configuration
     JsonConfigManager config_manager("configs/config.json");
     if (!config_manager.loadConfig()) {
-        console->error("Failed to load configuration file");
+        spdlog::error("Failed to load configuration file");
         return -1;
     }
     
@@ -50,59 +46,59 @@ int main(int argc, char* argv[]) {
     // Parse command line arguments
     if (argc > 1) {
         image_path = argv[1];
-        console->info("Using image path from command line: {}", image_path);
+        spdlog::info("Using image path from command line: {}", image_path);
     }
     if (argc > 2) {
         model_path = argv[2];
-        console->info("Using model path from command line: {}", model_path);
+        spdlog::info("Using model path from command line: {}", model_path);
     }
     
     try {
-        console->info("Loading image: {}", image_path);
+        spdlog::info("Loading image: {}", image_path);
         // Load image
         cv::Mat image = cv::imread(image_path);
         if (image.empty()) {
-            console->error("Cannot load image: {}", image_path);
+            spdlog::error("Cannot load image: {}", image_path);
             return -1;
         }
         
-        console->info("Image loaded successfully. Size: {}x{}", image.cols, image.rows);
+        spdlog::info("Image loaded successfully. Size: {}x{}", image.cols, image.rows);
         
         // Initialize detector
-        console->info("Initializing ObjectDetector");
+        spdlog::info("Initializing ObjectDetector");
         ObjectDetector detector;
         if (!detector.initialize(config_manager)) {
-            console->error("Failed to initialize detector from JSON config");
+            spdlog::error("Failed to initialize detector from JSON config");
             return -1;
         }
         
-        console->info("Model loaded successfully: {}", model_path);
+        spdlog::info("Model loaded successfully: {}", model_path);
         
         // Perform detection
-        console->info("Starting object detection");
+        spdlog::info("Starting object detection");
         std::vector<DetectionResult> results = detector.detect(image);
         
         // Display results
-        console->info("Detection results:");
+        spdlog::info("Detection results:");
         for (size_t i = 0; i < results.size(); ++i) {
             const auto& result = results[i];
-            console->info("  [{}] Class: {}, Confidence: {:.2f}, Box: ({}, {}, {}, {})", 
+            spdlog::info("  [{}] Class: {}, Confidence: {:.2f}, Box: ({}, {}, {}, {})", 
                         i, result.class_id, result.confidence, 
                         result.box.x, result.box.y, result.box.width, result.box.height);
         }
         
         // Show image with detections
-        console->info("Displaying results");
+        spdlog::info("Displaying results");
         cv::Mat result_image = image.clone();
         detector.drawBoxes(result_image, results);
         cv::imshow("Object Detection Result", result_image);
         cv::waitKey(0);
         
-        console->info("Application finished successfully");
+        spdlog::info("Application finished successfully");
         
     }
     catch (const std::exception& e) {
-        console->error("Exception: {}", e.what());
+        spdlog::error("Exception: {}", e.what());
         return -1;
     }
     

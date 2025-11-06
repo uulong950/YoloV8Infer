@@ -30,6 +30,10 @@ bool JsonConfigManager::loadConfig() {
             return false;
         }
         
+        if (!parseClassesConfig()) {
+            return false;
+        }
+        
         spdlog::info("Configuration loaded successfully from {}", config_path_);
         return true;
     }
@@ -92,6 +96,26 @@ bool JsonConfigManager::parseInputConfig() {
     }
     catch (const std::exception& e) {
         spdlog::error("Failed to parse input config: {}", e.what());
+        return false;
+    }
+}
+
+bool JsonConfigManager::parseClassesConfig() {
+    try {
+        if (config_data_.contains("classes")) {
+            const auto& classes = config_data_["classes"];
+            if (classes.is_array()) {
+                for (const auto& class_name : classes) {
+                    if (class_name.is_string()) {
+                        classes_config_.names.push_back(class_name.get<std::string>());
+                    }
+                }
+            }
+        }
+        return true;
+    }
+    catch (const std::exception& e) {
+        spdlog::error("Failed to parse classes config: {}", e.what());
         return false;
     }
 }
