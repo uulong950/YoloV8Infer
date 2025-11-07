@@ -93,6 +93,11 @@
 - CPU推理：约81毫秒
 - GPU推理：约1253毫秒（首次运行包含初始化开销）
 
+[2025-11-07 17:37:03.579] [performance] [info] === PERFORMANCE COMPARISON ===
+[2025-11-07 17:37:03.579] [performance] [info] CPU: 74.21 ms
+[2025-11-07 17:37:03.579] [performance] [info] GPU: 7.05 ms
+[2025-11-07 17:37:03.579] [performance] [info] GPU is 10.53x faster than CPU
+
 优化GPU性能的方法：
 1. 对多张图片使用批量处理
 2. 确保模型足够大以从GPU并行化中受益
