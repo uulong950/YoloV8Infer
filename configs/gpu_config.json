@@ -5,10 +5,10 @@
     "input_height": 640,
     "device_type": "GPU"
   },
-    "detection": {
-        "confidence_threshold": 0.35,
-        "nms_threshold": 0.55
-    },
+  "detection": {
+    "confidence_threshold": 0.35,
+    "nms_threshold": 0.55
+  },
   "input": {
     "image_path": "D:/workspace/codetest/OpenCVCppTest/OpenCVFirst/test.jpg"
   },

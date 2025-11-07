@@ -56,6 +56,9 @@ bool JsonConfigManager::parseModelConfig() {
             if (model.contains("input_height")) {
                 model_config_.input_height = model["input_height"].get<int>();
             }
+            if (model.contains("device_type")) {
+                model_config_.device_type = model["device_type"].get<std::string>();
+            }
         }
         return true;
     }

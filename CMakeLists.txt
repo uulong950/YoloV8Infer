@@ -27,9 +27,16 @@ endif()
 # ===================
 # ONNX Runtime  
 # ===================
-set(ONNXRUNTIME_ROOT "D:/install/onnxruntime/onnxruntime-win-x64-1.17.1")
+set(ONNXRUNTIME_ROOT "D:/install/onnxruntime/onnxruntime-win-x64-gpu-1.19.2")
 set(ONNXRUNTIME_INCLUDE_DIRS "${ONNXRUNTIME_ROOT}/include")
 set(ONNXRUNTIME_LIBRARIES "${ONNXRUNTIME_ROOT}/lib/onnxruntime.lib")
+
+# GPU-specific libraries
+set(ONNXRUNTIME_GPU_LIBRARIES 
+    "${ONNXRUNTIME_ROOT}/lib/onnxruntime.lib"
+    "${ONNXRUNTIME_ROOT}/lib/onnxruntime_providers_cuda.lib"
+    "${ONNXRUNTIME_ROOT}/lib/onnxruntime_providers_shared.lib"
+)
 
 if(NOT EXISTS "${ONNXRUNTIME_INCLUDE_DIRS}/onnxruntime_cxx_api.h")
     message(FATAL_ERROR "ONNX Runtime header not found at ${ONNXRUNTIME_INCLUDE_DIRS}")
@@ -88,7 +95,7 @@ target_include_directories(YoloDetector PUBLIC ${NLOHMANN_JSON_INCLUDE_DIRS})
 
 target_link_libraries(YoloDetector PRIVATE 
     ${OpenCV_LIBS}
-    ${ONNXRUNTIME_LIBRARIES}
+    ${ONNXRUNTIME_GPU_LIBRARIES}
 )
 target_compile_features(YoloDetector PUBLIC cxx_std_17)
 
@@ -111,9 +118,25 @@ target_link_libraries(${PROJECT_NAME} PRIVATE YoloDetector)
 # ===================
 # Automatically copy config file to build directory
 configure_file(configs/config.json ${CMAKE_CURRENT_BINARY_DIR}/configs/config.json COPYONLY)
+configure_file(configs/cpu_config.json ${CMAKE_CURRENT_BINARY_DIR}/configs/cpu_config.json COPYONLY)
+configure_file(configs/gpu_config.json ${CMAKE_CURRENT_BINARY_DIR}/configs/gpu_config.json COPYONLY)
 
 # ===================
 # Load Test 
 # ===================
 enable_testing()
 add_subdirectory(tests)
+
+# ===================
+# Performance Test
+# ===================
+add_executable(performance_test
+    tests/performance_test.cpp
+)
+target_include_directories(performance_test PRIVATE 
+    ${SPDLOG_INCLUDE_DIRS}
+)
+if(EXISTS "${NLOHMANN_JSON_INCLUDE_DIRS}/nlohmann/json.hpp")
+    target_include_directories(performance_test PRIVATE ${NLOHMANN_JSON_INCLUDE_DIRS})
+endif()
+target_link_libraries(performance_test PRIVATE YoloDetector)

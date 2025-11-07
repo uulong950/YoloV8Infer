@@ -3,12 +3,12 @@
     "path": "D:/zxlong/best_opt19_640.onnx",
     "input_width": 640,
     "input_height": 640,
-    "device_type": "GPU"
+    "device_type": "CPU"
   },
-    "detection": {
-        "confidence_threshold": 0.35,
-        "nms_threshold": 0.55
-    },
+  "detection": {
+    "confidence_threshold": 0.35,
+    "nms_threshold": 0.55
+  },
   "input": {
     "image_path": "D:/workspace/codetest/OpenCVCppTest/OpenCVFirst/test.jpg"
   },

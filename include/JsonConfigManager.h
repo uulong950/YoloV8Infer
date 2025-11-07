@@ -8,6 +8,7 @@ struct ModelConfig {
     std::string path;
     int input_width = 640;
     int input_height = 640;
+    std::string device_type = "CPU"; // 默认使用CPU
 };
 
 struct DetectionConfig {

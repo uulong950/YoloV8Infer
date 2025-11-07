@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A C++ implementation of YOLOv8 object detection with ONNX Runtime.
+A C++ implementation of YOLOv8 object detection with ONNX Runtime, supporting both CPU and GPU inference.
 
 ## Features
 
@@ -10,6 +10,7 @@ A C++ implementation of YOLOv8 object detection with ONNX Runtime.
 - Configuration via JSON files
 - Integration with OpenCV for image processing
 - ONNX Runtime for model inference
+- Support for both CPU and GPU inference
 - Cross-platform support (Windows, Linux, macOS)
 
 ## Prerequisites
@@ -17,7 +18,7 @@ A C++ implementation of YOLOv8 object detection with ONNX Runtime.
 - CMake 3.14 or higher
 - C++17 compatible compiler
 - OpenCV 4.x
-- ONNX Runtime
+- ONNX Runtime (CPU or GPU version)
 - spdlog
 - nlohmann/json
 
@@ -62,7 +63,8 @@ A C++ implementation of YOLOv8 object detection with ONNX Runtime.
      "model": {
        "path": "path/to/your/model.onnx",
        "input_width": 640,
-       "input_height": 640
+       "input_height": 640,
+       "device_type": "CPU"  // or "GPU"
      },
      "detection": {
        "confidence_threshold": 0.5,
@@ -70,7 +72,11 @@ A C++ implementation of YOLOv8 object detection with ONNX Runtime.
      },
      "input": {
        "image_path": "path/to/your/image.jpg"
-     }
+     },
+     "classes": [
+       "class1",
+       "class2"
+     ]
    }
    ```
 
@@ -78,6 +84,19 @@ A C++ implementation of YOLOv8 object detection with ONNX Runtime.
    ```bash
    ./YoloV8Infer
    ```
+
+## Performance Comparison
+
+In our tests, we found that for smaller models, CPU inference may be faster than GPU inference due to data transfer overhead. For larger models or batch processing, GPU inference typically provides better performance.
+
+### Test Results
+- CPU inference: ~81ms
+- GPU inference: ~1253ms (first run includes initialization overhead)
+
+To optimize GPU performance:
+1. Use batch processing for multiple images
+2. Ensure your model is large enough to benefit from GPU parallelization
+3. Adjust CUDA provider options in the code
 
 ## Project Structure
 

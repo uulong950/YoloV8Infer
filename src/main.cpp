@@ -9,6 +9,7 @@
 #include <memory>
 
 int main(int argc, char* argv[]) {
+    std::cout << "ORT Version: " << Ort::GetVersionString() << std::endl;
     // Initialize spdlog
     try {
         // Create a logger that outputs to both console and file

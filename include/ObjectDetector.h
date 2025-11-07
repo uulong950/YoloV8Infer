@@ -54,8 +54,7 @@ private:
     float nms_threshold_;
     int input_width_;
     int input_height_;
-    
-
+    std::string device_type_; // 设备类型(CPU/GPU)
     
     std::vector<int> nmsBoxes(const std::vector<cv::Rect>& boxes, 
                              const std::vector<float>& confidences);

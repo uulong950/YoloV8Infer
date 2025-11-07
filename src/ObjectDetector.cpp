@@ -26,6 +26,7 @@ bool ObjectDetector::initialize(JsonConfigManager& config_manager) {
         input_height_ = model_config.input_height;
         confidence_threshold_ = detection_config.confidence_threshold;
         nms_threshold_ = detection_config.nms_threshold;
+        device_type_ = model_config.device_type; // 设置设备类型
         
         // 设置类别名称
         if (!classes_config.names.empty()) {
@@ -40,6 +41,7 @@ bool ObjectDetector::initialize(JsonConfigManager& config_manager) {
         spdlog::info("Input size: {}x{}", input_width_, input_height_);
         spdlog::info("Confidence threshold: {}", confidence_threshold_);
         spdlog::info("NMS threshold: {}", nms_threshold_);
+        spdlog::info("Device type: {}", device_type_);
         spdlog::info("Number of classes: {}", class_names_.size());
         
         // 调用基础初始化方法
@@ -61,6 +63,29 @@ bool ObjectDetector::initialize(const std::string& model_path) {
         // Create session options
         Ort::SessionOptions session_options;
         session_options.SetIntraOpNumThreads(1);
+        
+        // 根据设备类型配置推理提供者
+        if (device_type_ == "GPU") {
+            // Enable CUDA provider for GPU inference
+            OrtCUDAProviderOptions cuda_options;
+            cuda_options.device_id = 0;  // Use the first GPU
+            cuda_options.arena_extend_strategy = 0;
+            cuda_options.gpu_mem_limit = SIZE_MAX;
+            cuda_options.cudnn_conv_algo_search = OrtCudnnConvAlgoSearchExhaustive;
+            cuda_options.do_copy_in_default_stream = 1;
+            
+            // 添加更多优化选项
+            // 如果需要更高的性能，可以尝试不同的cudnn_conv_algo_search选项：
+            // OrtCudnnConvAlgoSearchExhaustive (默认) - 最优化但可能较慢
+            // OrtCudnnConvAlgoSearchHeuristic - 启发式搜索，较快但可能不是最优
+            // OrtCudnnConvAlgoSearchNone - 不搜索，最快但可能不是最优
+            
+            session_options.AppendExecutionProvider_CUDA(cuda_options);
+            spdlog::info("Using GPU for inference with CUDA provider");
+        } else {
+            // CPU inference - no additional providers needed
+            spdlog::info("Using CPU for inference");
+        }
         
         // Convert string to wide string for ONNX Runtime
         std::wstring w_model_path(model_path.begin(), model_path.end());
