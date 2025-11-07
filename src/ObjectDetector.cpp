@@ -1,6 +1,7 @@
 #include "ObjectDetector.h"
 #include "JsonConfigManager.h"
 #include <algorithm>
+#include <cmath>
 
 ObjectDetector::ObjectDetector() 
     : confidence_threshold_(0.0f)
@@ -109,9 +110,12 @@ std::vector<DetectionResult> ObjectDetector::detect(const cv::Mat& image) {
     try {
         spdlog::info("Starting detection on image ({}x{})", image.cols, image.rows);
         
-        // Preprocessing
+        // Letterbox preprocessing
+        cv::Mat letterbox_image = letterboxResize(image, cv::Size(input_width_, input_height_));
+        
+        // Convert to blob
         cv::Mat blob;
-        cv::dnn::blobFromImage(image, blob, 1.0 / 255.0, cv::Size(input_width_, input_height_),
+        cv::dnn::blobFromImage(letterbox_image, blob, 1.0 / 255.0, cv::Size(),
             cv::Scalar(0, 0, 0), true, false);
 
         // Prepare input tensor
@@ -164,8 +168,16 @@ std::vector<DetectionResult> ObjectDetector::detect(const cv::Mat& image) {
         std::vector<float> confidences;
         std::vector<int> class_ids;
         
-        float scale_x = static_cast<float>(image.cols) / input_width_;
-        float scale_y = static_cast<float>(image.rows) / input_height_;
+        // 计算Letterbox的缩放比例和偏移量
+        float scale = std::min(static_cast<float>(input_width_) / image.cols, 
+                              static_cast<float>(input_height_) / image.rows);
+        cv::Size new_size(static_cast<int>(image.cols * scale), static_cast<float>(image.rows * scale));
+        int top = (input_height_ - new_size.height) / 2;
+        int left = (input_width_ - new_size.width) / 2;
+        
+        // 计算坐标转换参数
+        float scale_x = static_cast<float>(image.cols) / new_size.width;
+        float scale_y = static_cast<float>(image.rows) / new_size.height;
         
         int valid_detections = 0;
         for (int i = 0; i < num_anchors; ++i) {
@@ -186,20 +198,20 @@ std::vector<DetectionResult> ObjectDetector::detect(const cv::Mat& image) {
             }
             
             if (max_conf > confidence_threshold_ && best_class >= 0) {
-                // Convert to original image coordinates
-                float x1 = (cx - w * 0.5f) * scale_x;
-                float y1 = (cy - h * 0.5f) * scale_y;
-                float x2 = (cx + w * 0.5f) * scale_x;
-                float y2 = (cy + h * 0.5f) * scale_y;
+                // Convert to original image coordinates (考虑Letterbox偏移)
+                float x1 = ((cx - w * 0.5f) - left) * scale_x;
+                float y1 = ((cy - h * 0.5f) - top) * scale_y;
+                float x2 = ((cx + w * 0.5f) - left) * scale_x;
+                float y2 = ((cy + h * 0.5f) - top) * scale_y;
                 
                 // Clip to image boundaries
-                int left = static_cast<int>(std::max(0.0f, x1));
-                int top = static_cast<int>(std::max(0.0f, y1));
-                int right = static_cast<int>(std::min(static_cast<float>(image.cols), x2));
-                int bottom = static_cast<int>(std::min(static_cast<float>(image.rows), y2));
+                int left_clip = static_cast<int>(std::max(0.0f, x1));
+                int top_clip = static_cast<int>(std::max(0.0f, y1));
+                int right_clip = static_cast<int>(std::min(static_cast<float>(image.cols), x2));
+                int bottom_clip = static_cast<int>(std::min(static_cast<float>(image.rows), y2));
                 
-                if (right > left && bottom > top) {
-                    boxes.emplace_back(left, top, right - left, bottom - top);
+                if (right_clip > left_clip && bottom_clip > top_clip) {
+                    boxes.emplace_back(left_clip, top_clip, right_clip - left_clip, bottom_clip - top_clip);
                     confidences.push_back(max_conf);
                     class_ids.push_back(best_class);
                     valid_detections++;
@@ -307,4 +319,29 @@ void ObjectDetector::drawBoxes(cv::Mat& image, const std::vector<DetectionResult
         cv::putText(image, label, cv::Point(detection.box.x, std::max(detection.box.y - 5, 10)),
                    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 0), 1);
     }
+}
+
+cv::Mat ObjectDetector::letterboxResize(const cv::Mat& image, cv::Size target_size, cv::Scalar fill_color) {
+    // 计算缩放比例，保持宽高比
+    float scale = std::min(static_cast<float>(target_size.width) / image.cols, 
+                          static_cast<float>(target_size.height) / image.rows);
+    
+    // 计算新尺寸
+    cv::Size new_size(static_cast<int>(image.cols * scale), static_cast<int>(image.rows * scale));
+    
+    // 创建目标尺寸的填充图像
+    cv::Mat resized_image(target_size, CV_8UC3, fill_color);
+    
+    // 计算偏移量以居中放置图像
+    int top = (target_size.height - new_size.height) / 2;
+    int left = (target_size.width - new_size.width) / 2;
+    
+    // 调整图像大小
+    cv::Mat scaled_image;
+    cv::resize(image, scaled_image, new_size, 0, 0, cv::INTER_LINEAR);
+    
+    // 将调整大小后的图像放置在填充图像的中心
+    scaled_image.copyTo(resized_image(cv::Rect(left, top, new_size.width, new_size.height)));
+    
+    return resized_image;
 }

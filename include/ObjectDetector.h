@@ -41,6 +41,9 @@ public:
     // 获取类别名称
     const std::vector<std::string>& getClassNames() const { return class_names_; }
     
+    // Letterbox图像预处理函数
+    cv::Mat letterboxResize(const cv::Mat& image, cv::Size target_size, cv::Scalar fill_color = cv::Scalar(0, 0, 0));
+    
 private:
     std::unique_ptr<Ort::Env> env_;
     std::unique_ptr<Ort::Session> session_;
