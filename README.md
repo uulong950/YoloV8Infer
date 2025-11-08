@@ -15,12 +15,12 @@
 
 ## 环境要求
 
-- CMake 3.14 或更高版本
-- 支持C++17的编译器
-- OpenCV 4.x
-- ONNX Runtime（CPU或GPU版本）
-- spdlog
-- nlohmann/json
+- CMake 3.14 或更高版本 （实际使用3.31.9）
+- 支持C++17/C++20的编译器 （实际使用MSVC 19.44.35219）
+- OpenCV 4.x （实际使用4.12.0）
+- ONNX Runtime（CPU或GPU版本） （实际使用onnxruntime-win-x64-gpu-1.19.2）
+- spdlog （实际使用1.16.0）
+- nlohmann/json （实际使用3.12.0）
 
 ## 安装步骤
 
@@ -87,11 +87,19 @@
 
 ## 性能对比
 
-在我们的测试中，对于较小的模型，由于数据传输开销，CPU推理可能比GPU推理更快。对于较大的模型或批量处理，GPU推理通常能提供更好的性能。
+在测试中，首次运行由于模型加载和初始化的开销，CPU推理可能比GPU推理更快。
+实际批量处理时，GPU推理通常能提供更好的性能，性能见测试结果。
 
 ### 测试结果
+#### 测试环境
+- Windows 11
+- CPU：Intel Core i7-14700F
+- GPU：NVIDIA GeForce RTX 4060Ti 8GB
+#### 测试结果（单张）
 - CPU推理：约81毫秒
 - GPU推理：约1253毫秒（首次运行包含初始化开销）
+
+#### 测试结果（批量处理）
 - [2025-11-07 17:37:03.579] [performance] [info] === PERFORMANCE COMPARISON ===
 - [2025-11-07 17:37:03.579] [performance] [info] CPU: 74.21 ms
 - [2025-11-07 17:37:03.579] [performance] [info] GPU: 7.05 ms
